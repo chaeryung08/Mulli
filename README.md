@@ -1,3 +1,306 @@
+# 번역본
+물론이죠 😊 아래는 당신이 올린 **GitHub 프로젝트 페이지 전체 내용의 한국어 번역본**입니다.
+(코드 부분은 그대로 두고, 설명·본문만 자연스럽게 한국어로 옮겼습니다.)
+
+---
+
+# **전자기파와 아두이노 (Electromagnetic Waves with Arduino)**
+
+이 프로젝트에서는 **Arduino UNO R3 보드**와 **포토트랜지스터(fototransistor)**라는 장치를 사용하여 **전자기파**, 특히 **가시광선**을 탐구합니다.
+빛의 감지 및 측정 응용과 더불어, **통신 기술**과 **레이더 기술**에 대해서도 살펴봅니다.
+
+---
+
+## **서문**
+
+이 프로젝트는 제가 이탈리아 쿠네오(Cuneo)의 **Enaip Piemonte 센터**에서 수강한
+“네트워크 기술자 및 시스템 관리자 과정”에서 발표한 보고서의 일부로 수행되었습니다.
+이 전문 과정을 통해 하드웨어와 관련된 프로세스에 대한 이해를 쌓고,
+이전의 웹디자인 경험에서 쌓은 지식을 통합하고자 했습니다.
+
+---
+
+## **프로젝트 개요**
+
+프로젝트는 두 가지 실험으로 구성됩니다.
+
+1. **조도 센서 실험:**
+   포토트랜지스터를 이용해 빛의 세기를 측정합니다.
+   아날로그 빛 감지 회로를 구성하고, 아두이노 보드의 아날로그 입력값이
+   방 안의 조도와 어떻게 관련되는지 살펴봅니다.
+   또한, **광섬유(fiber optic)**를 통해 빛으로 정보를 전송하는 원리도 함께 탐구합니다.
+
+2. **빛 레이더 실험:**
+   센서를 서보모터에 연결해, 방 안의 빛의 세기를 스캔하는 “빛 레이더”를 제작합니다.
+   서보모터는 시리얼 모니터 명령어로 수동 제어됩니다.
+
+두 실험 모두 **Arduino Student Kit**의 학습 자료를 기반으로 진행되었습니다.
+
+---
+
+## **1부 - 조도 센서**
+
+빛 센서는 오늘날 가장 많이 사용되는 센서 중 하나입니다.
+예를 들어, 휴대폰 카메라의 자동 플래시, 가로등, 자동차 헤드라이트, 정원 조명,
+보안 시스템 등이 모두 조도 센서를 사용합니다.
+
+센서는 빛의 밝기나 색을 감지하며, 자외선, 적외선, X선 등 특정 파장대의 빛을 감지할 수도 있습니다.
+
+이번 활동에서는 **Arduino UNO R3**와 **포토트랜지스터**를 이용해
+방 안의 빛 세기를 측정하는 아날로그 조도 센서를 만듭니다.
+
+---
+
+### **필요 부품**
+
+* Arduino UNO R3 보드 1개
+* 포토트랜지스터 1개
+* 저항 10KΩ 1개
+* 저항 220Ω 1개
+* LED 1개
+* 점퍼 케이블 여러 개
+
+포토트랜지스터는 빛 에너지를 전기에너지로 변환하는 부품으로,
+LED의 반대 역할을 합니다.
+LED는 전기를 받아 빛을 내지만, 포토트랜지스터는 빛을 받아 전류를 만들어 냅니다.
+이 전류는 매우 약하기 때문에, 트랜지스터와 결합해 증폭시켜 사용합니다.
+
+---
+
+### **측정 코드**
+
+```cpp
+const int sensorPin = A0;
+int lightAmount = 0;
+
+void setup() {
+  Serial.begin(9600);
+}
+
+void loop() {
+  lightAmount = analogRead(sensorPin);
+  Serial.print("Light Intensity: ");
+  Serial.println(lightAmount);
+  delay(1000);
+}
+```
+
+---
+
+## **빛을 이용한 통신**
+
+전자기파는 통신에 널리 이용됩니다 — TV, 라디오, 휴대폰, 컴퓨터, 블루투스, 무선장난감 등.
+이들은 모두 **전파**를 이용하지만, **광섬유 기술**은 **빛**을 이용해 더 빠르고 안정적으로
+대량의 정보를 전송합니다.
+
+광섬유는 얇은 유리 또는 플라스틱 선으로 이루어진 케이블로,
+송신기가 전기 신호를 빛(레이저 펄스)으로 바꿔 보내면,
+수신기가 이를 다시 전기 신호로 복원합니다.
+
+---
+
+### **LED-센서 통신 실험 코드**
+
+```cpp
+const int sensorPin = A0;
+const int LEDPin = 10;
+int lightAmount = 0;
+long timerLED = 0;
+long timerSensor = 0;
+int toggleLED = 0;
+
+void setup() {
+  pinMode(LEDPin, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  transmitter();
+  receiver();
+}
+
+void transmitter (){
+  if (millis() >= timerLED + 2000) {
+    toggleLED = !toggleLED;
+    digitalWrite(LEDPin, toggleLED);
+    timerLED = millis();
+  }
+}
+
+void receiver (){
+  if (millis() >= timerSensor + 1000) {
+    lightAmount = analogRead(sensorPin);
+    Serial.print("Light Intensity: ");
+    Serial.println(lightAmount);
+    timerSensor = millis();
+  }
+}
+```
+
+LED가 깜빡이며 데이터를 보낼 때, 센서가 그 빛의 세기를 감지하는 원리입니다.
+이는 광섬유 통신의 기본 개념과 유사합니다.
+
+---
+
+## **빛 통신의 역사**
+
+텔레그래프 → 전신 → 광섬유로 이어지는 통신 기술의 발전은
+모두 “신호를 빛이나 전기 신호로 바꾸어 멀리 보내는” 원리에서 출발했습니다.
+
+---
+
+## **NASA의 달 거리 측정**
+
+1969년, 아폴로 11호가 달에 착륙했을 때 **레이저 반사판**을 설치했습니다.
+지구에서 쏜 레이저가 달의 반사판에 부딪혀 되돌아오는 시간을 측정하면,
+빛의 속도(약 30만 km/s)를 이용해 **지구-달 거리**를 정확히 계산할 수 있습니다.
+
+---
+
+## **이탈리아의 광섬유 현황**
+
+EU39 지역(유럽 39개국)의 가정용 FTTH(광섬유 직접 연결) 보급률은
+2021년 1억9840만 세대 → 2022년 2억1900만 세대로 증가했습니다.
+이탈리아는 약 210만 회선 증가로 상위권을 기록했습니다.
+그러나 아직도 약 절반의 가구가 실제로는 광섬유 서비스를 사용하지 않고 있습니다.
+
+---
+
+## **전자기 에너지의 역사적 발견**
+
+* **마이클 패러데이(Michael Faraday):** 전자기 유도의 발견자.
+
+* **제임스 클러크 맥스웰(James Clerk Maxwell):**
+  전기와 자기 현상을 하나의 수학적 모델로 통합하고,
+  빛을 **전자기파**로 규정한 물리학자.
+
+* **하인리히 헤르츠(Heinrich Hertz):**
+  실험으로 전자기파의 존재를 최초로 입증한 과학자.
+
+그의 실험은 훗날 **라디오, 텔레비전, 레이더** 등의 기초가 되었습니다.
+
+---
+
+### **무선 통신의 발전**
+
+* **굴리엘모 마르코니(Guglielmo Marconi):**
+  무선 전파를 이용한 통신 실험을 성공시켜 **라디오의 아버지**로 불림.
+
+* **헤디 라마르(Hedy Lamarr):**
+  배우이자 발명가로, **주파수 도약 스펙트럼 확산 기술**을 고안하여
+  오늘날 **Wi-Fi** 및 **블루투스**의 기초를 마련함.
+
+---
+
+## **2부 - 빛 레이더 (Light Wave Radar)**
+
+전자기파는 통신 외에도 다양한 분야에 응용됩니다.
+예: 전자레인지, 적외선 리모컨, 감마선 치료, 항공 교통 관제 등.
+
+이 실험에서는 **빛(Light)을 이용한 레이더**, 즉 **LIDAR의 원리**를 모사합니다.
+서보모터를 이용해 센서의 각도를 바꾸며 방 안의 빛 세기를 측정합니다.
+
+---
+
+### **필요 부품**
+
+* 1부의 조도 센서 회로
+* 서보모터 1개
+* 100μF 콘덴서 1개
+* 점퍼선, 테이프 등
+
+---
+
+### **코드**
+
+```cpp
+#include <Servo.h>
+
+const int sensorPin = A0;
+const int servoPin = 3;
+const int LEDPin = 10;
+int lightAmount = 0;
+int servoAngle = 0;
+int inputCommand = 0;
+
+Servo myServo;
+
+void setup() {
+  pinMode(LEDPin, OUTPUT);
+  Serial.begin(9600);
+  myServo.attach(servoPin);
+  myServo.write(servoAngle);
+  delay(1000);
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    inputCommand = Serial.read();
+
+    switch (inputCommand){
+      case '+':
+        servoAngle += 10;
+        if (servoAngle >= 180) {
+          servoAngle = 180;
+          digitalWrite(LEDPin, HIGH);
+          delay(1000);
+          digitalWrite(LEDPin, LOW);
+        }
+        break;
+      case '-':
+        servoAngle -= 10;
+        if (servoAngle <= 0) {
+          servoAngle = 0;
+          digitalWrite(LEDPin, HIGH);
+          delay(1000);
+          digitalWrite(LEDPin, LOW);
+        }
+        break;
+    }
+
+    myServo.write(servoAngle);
+    delay(1000);
+
+    lightAmount = analogRead(sensorPin);
+    Serial.print("Angle: ");
+    Serial.print(servoAngle);
+    Serial.print("     Light Intensity: ");
+    Serial.println(lightAmount);
+  }
+}
+```
+
+---
+
+## **실험 결과**
+
+시리얼 모니터에 `+` 또는 `-`를 입력하면 서보모터가 움직입니다.
+LED는 모터가 0° 또는 180°의 한계에 도달했음을 표시합니다.
+각도에 따라 센서가 측정하는 조도 값이 변하는 것을 관찰할 수 있습니다.
+
+---
+
+## **마무리**
+
+이 프로젝트가 흥미로웠기를 바랍니다 😊
+모든 자료와 코드는 GitHub의 **LICENSE.md** 파일에 명시된 사용 조건에 따라 이용할 수 있습니다.
+
+---
+
+원본 저작권 © 2025 GitHub, Inc.
+
+---
+
+필요하시면,
+이 문서에서 **요약 버전**(예: 학교 보고서용 1~2페이지)이나
+**한국어 발표용 대본** 형태로 다시 정리해드릴 수도 있습니다.
+그렇게 만들어드릴까요?
+
+
+
+
+
+
 # electromagnetic-waves-with-arduino
 In questo progetto utilizzeremo una scheda Arduino UNO R3 e un dispositivo chiamato fototransistor per studiare le onde elettromagnetiche, in particolar modo quelle della luce visibile. Esploreremo alcune delle applicazioni di rilevamento e misurazione della luce e anche tecnologie di comunicazione e radar.
 
